@@ -28,7 +28,7 @@ use runtime::{
     Session, TokenUsage, ToolError, ToolExecutor, UsageTracker,
 };
 use serde_json::json;
-use tools::{execute_tool, mvp_tool_specs};
+use tools::{execute_tool, mvp_tool_specs, ToolSpec};
 
 const DEFAULT_MODEL: &str = "claude-sonnet-4-20250514";
 const DEFAULT_MAX_TOKENS: u32 = 32;
@@ -67,14 +67,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             model,
             output_format,
             allowed_tools,
-        } => LiveCli::new(model, false, allowed_tools)?
+            permission_mode,
+        } => LiveCli::new(model, false, allowed_tools, permission_mode)?
             .run_turn_with_output(&prompt, output_format)?,
         CliAction::Login => run_login()?,
         CliAction::Logout => run_logout()?,
         CliAction::Repl {
             model,
             allowed_tools,
-        } => run_repl(model, allowed_tools)?,
+            permission_mode,
+        } => run_repl(model, allowed_tools, permission_mode)?,
         CliAction::Help => print_help(),
     }
     Ok(())
@@ -98,12 +100,14 @@ enum CliAction {
         model: String,
         output_format: CliOutputFormat,
         allowed_tools: Option<AllowedToolSet>,
+        permission_mode: PermissionMode,
     },
     Login,
     Logout,
     Repl {
         model: String,
         allowed_tools: Option<AllowedToolSet>,
+        permission_mode: PermissionMode,
     },
     // prompt-mode formatting is only supported for non-interactive runs
     Help,
@@ -127,9 +131,11 @@ impl CliOutputFormat {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn parse_args(args: &[String]) -> Result<CliAction, String> {
     let mut model = DEFAULT_MODEL.to_string();
     let mut output_format = CliOutputFormat::Text;
+    let mut permission_mode = default_permission_mode();
     let mut wants_version = false;
     let mut allowed_tool_values = Vec::new();
     let mut rest = Vec::new();
@@ -159,8 +165,19 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
                 output_format = CliOutputFormat::parse(value)?;
                 index += 2;
             }
+            "--permission-mode" => {
+                let value = args
+                    .get(index + 1)
+                    .ok_or_else(|| "missing value for --permission-mode".to_string())?;
+                permission_mode = parse_permission_mode_arg(value)?;
+                index += 2;
+            }
             flag if flag.starts_with("--output-format=") => {
                 output_format = CliOutputFormat::parse(&flag[16..])?;
+                index += 1;
+            }
+            flag if flag.starts_with("--permission-mode=") => {
+                permission_mode = parse_permission_mode_arg(&flag[18..])?;
                 index += 1;
             }
             "--allowedTools" | "--allowed-tools" => {
@@ -195,6 +212,7 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
         return Ok(CliAction::Repl {
             model,
             allowed_tools,
+            permission_mode,
         });
     }
     if matches!(rest.first().map(String::as_str), Some("--help" | "-h")) {
@@ -220,6 +238,7 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
                 model,
                 output_format,
                 allowed_tools,
+                permission_mode,
             })
         }
         other if !other.starts_with('/') => Ok(CliAction::Prompt {
@@ -227,6 +246,7 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
             model,
             output_format,
             allowed_tools,
+            permission_mode,
         }),
         other => Err(format!("unknown subcommand: {other}")),
     }
@@ -278,6 +298,33 @@ fn normalize_allowed_tools(values: &[String]) -> Result<Option<AllowedToolSet>, 
 
 fn normalize_tool_name(value: &str) -> String {
     value.trim().replace('-', "_").to_ascii_lowercase()
+}
+
+fn parse_permission_mode_arg(value: &str) -> Result<PermissionMode, String> {
+    normalize_permission_mode(value)
+        .ok_or_else(|| {
+            format!(
+                "unsupported permission mode '{value}'. Use read-only, workspace-write, or danger-full-access."
+            )
+        })
+        .map(permission_mode_from_label)
+}
+
+fn permission_mode_from_label(mode: &str) -> PermissionMode {
+    match mode {
+        "read-only" => PermissionMode::ReadOnly,
+        "workspace-write" => PermissionMode::WorkspaceWrite,
+        "danger-full-access" => PermissionMode::DangerFullAccess,
+        other => panic!("unsupported permission mode label: {other}"),
+    }
+}
+
+fn default_permission_mode() -> PermissionMode {
+    env::var("RUSTY_CLAUDE_PERMISSION_MODE")
+        .ok()
+        .as_deref()
+        .and_then(normalize_permission_mode)
+        .map_or(PermissionMode::WorkspaceWrite, permission_mode_from_label)
 }
 
 fn filter_tool_specs(allowed_tools: Option<&AllowedToolSet>) -> Vec<tools::ToolSpec> {
@@ -786,7 +833,7 @@ fn run_resume_command(
                         cumulative: usage,
                         estimated_tokens: 0,
                     },
-                    permission_mode_label(),
+                    default_permission_mode().as_str(),
                     &status_context(Some(session_path))?,
                 )),
             })
@@ -841,8 +888,9 @@ fn run_resume_command(
 fn run_repl(
     model: String,
     allowed_tools: Option<AllowedToolSet>,
+    permission_mode: PermissionMode,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cli = LiveCli::new(model, true, allowed_tools)?;
+    let mut cli = LiveCli::new(model, true, allowed_tools, permission_mode)?;
     let editor = input::LineEditor::new("› ");
     println!("{}", cli.startup_banner());
 
@@ -881,6 +929,7 @@ struct ManagedSessionSummary {
 struct LiveCli {
     model: String,
     allowed_tools: Option<AllowedToolSet>,
+    permission_mode: PermissionMode,
     system_prompt: Vec<String>,
     runtime: ConversationRuntime<AnthropicRuntimeClient, CliToolExecutor>,
     session: SessionHandle,
@@ -891,6 +940,7 @@ impl LiveCli {
         model: String,
         enable_tools: bool,
         allowed_tools: Option<AllowedToolSet>,
+        permission_mode: PermissionMode,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let system_prompt = build_system_prompt()?;
         let session = create_managed_session_handle()?;
@@ -900,10 +950,12 @@ impl LiveCli {
             system_prompt.clone(),
             enable_tools,
             allowed_tools.clone(),
+            permission_mode,
         )?;
         let cli = Self {
             model,
             allowed_tools,
+            permission_mode,
             system_prompt,
             runtime,
             session,
@@ -914,8 +966,9 @@ impl LiveCli {
 
     fn startup_banner(&self) -> String {
         format!(
-            "Rusty Claude CLI\n  Model            {}\n  Working directory {}\n  Session          {}\n\nType /help for commands. Shift+Enter or Ctrl+J inserts a newline.",
+            "Rusty Claude CLI\n  Model            {}\n  Permission mode  {}\n  Working directory {}\n  Session          {}\n\nType /help for commands. Shift+Enter or Ctrl+J inserts a newline.",
             self.model,
+            self.permission_mode.as_str(),
             env::current_dir().map_or_else(
                 |_| "<unknown>".to_string(),
                 |path| path.display().to_string(),
@@ -932,7 +985,8 @@ impl LiveCli {
             TerminalRenderer::new().color_theme(),
             &mut stdout,
         )?;
-        let result = self.runtime.run_turn(input, None);
+        let mut permission_prompter = CliPermissionPrompter::new(self.permission_mode);
+        let result = self.runtime.run_turn(input, Some(&mut permission_prompter));
         match result {
             Ok(_) => {
                 spinner.finish(
@@ -1055,7 +1109,7 @@ impl LiveCli {
                     cumulative,
                     estimated_tokens: self.runtime.estimated_tokens(),
                 },
-                permission_mode_label(),
+                self.permission_mode.as_str(),
                 &status_context(Some(&self.session.path)).expect("status context should load"),
             )
         );
@@ -1095,6 +1149,7 @@ impl LiveCli {
             self.system_prompt.clone(),
             true,
             self.allowed_tools.clone(),
+            self.permission_mode,
         )?;
         self.model.clone_from(&model);
         self.persist_session()?;
@@ -1107,7 +1162,10 @@ impl LiveCli {
 
     fn set_permissions(&mut self, mode: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
         let Some(mode) = mode else {
-            println!("{}", format_permissions_report(permission_mode_label()));
+            println!(
+                "{}",
+                format_permissions_report(self.permission_mode.as_str())
+            );
             return Ok(());
         };
 
@@ -1117,20 +1175,21 @@ impl LiveCli {
             )
         })?;
 
-        if normalized == permission_mode_label() {
+        if normalized == self.permission_mode.as_str() {
             println!("{}", format_permissions_report(normalized));
             return Ok(());
         }
 
-        let previous = permission_mode_label().to_string();
+        let previous = self.permission_mode.as_str().to_string();
         let session = self.runtime.session().clone();
-        self.runtime = build_runtime_with_permission_mode(
+        self.permission_mode = permission_mode_from_label(normalized);
+        self.runtime = build_runtime(
             session,
             self.model.clone(),
             self.system_prompt.clone(),
             true,
             self.allowed_tools.clone(),
-            normalized,
+            self.permission_mode,
         )?;
         self.persist_session()?;
         println!(
@@ -1149,19 +1208,19 @@ impl LiveCli {
         }
 
         self.session = create_managed_session_handle()?;
-        self.runtime = build_runtime_with_permission_mode(
+        self.runtime = build_runtime(
             Session::new(),
             self.model.clone(),
             self.system_prompt.clone(),
             true,
             self.allowed_tools.clone(),
-            permission_mode_label(),
+            self.permission_mode,
         )?;
         self.persist_session()?;
         println!(
             "Session cleared\n  Mode             fresh session\n  Preserved model  {}\n  Permission mode  {}\n  Session          {}",
             self.model,
-            permission_mode_label(),
+            self.permission_mode.as_str(),
             self.session.id,
         );
         Ok(())
@@ -1184,13 +1243,13 @@ impl LiveCli {
         let handle = resolve_session_reference(&session_ref)?;
         let session = Session::load_from_path(&handle.path)?;
         let message_count = session.messages.len();
-        self.runtime = build_runtime_with_permission_mode(
+        self.runtime = build_runtime(
             session,
             self.model.clone(),
             self.system_prompt.clone(),
             true,
             self.allowed_tools.clone(),
-            permission_mode_label(),
+            self.permission_mode,
         )?;
         self.session = handle;
         self.persist_session()?;
@@ -1261,13 +1320,13 @@ impl LiveCli {
                 let handle = resolve_session_reference(target)?;
                 let session = Session::load_from_path(&handle.path)?;
                 let message_count = session.messages.len();
-                self.runtime = build_runtime_with_permission_mode(
+                self.runtime = build_runtime(
                     session,
                     self.model.clone(),
                     self.system_prompt.clone(),
                     true,
                     self.allowed_tools.clone(),
-                    permission_mode_label(),
+                    self.permission_mode,
                 )?;
                 self.session = handle;
                 self.persist_session()?;
@@ -1291,13 +1350,13 @@ impl LiveCli {
         let removed = result.removed_message_count;
         let kept = result.compacted_session.messages.len();
         let skipped = removed == 0;
-        self.runtime = build_runtime_with_permission_mode(
+        self.runtime = build_runtime(
             result.compacted_session,
             self.model.clone(),
             self.system_prompt.clone(),
             true,
             self.allowed_tools.clone(),
-            permission_mode_label(),
+            self.permission_mode,
         )?;
         self.persist_session()?;
         println!("{}", format_compact_report(removed, kept, skipped));
@@ -1686,14 +1745,6 @@ fn normalize_permission_mode(mode: &str) -> Option<&'static str> {
     }
 }
 
-fn permission_mode_label() -> &'static str {
-    match env::var("RUSTY_CLAUDE_PERMISSION_MODE") {
-        Ok(value) if value == "read-only" => "read-only",
-        Ok(value) if value == "danger-full-access" => "danger-full-access",
-        _ => "workspace-write",
-    }
-}
-
 fn render_diff_report() -> Result<String, Box<dyn std::error::Error>> {
     let output = std::process::Command::new("git")
         .args(["diff", "--", ":(exclude).omx"])
@@ -1823,25 +1874,7 @@ fn build_runtime(
     system_prompt: Vec<String>,
     enable_tools: bool,
     allowed_tools: Option<AllowedToolSet>,
-) -> Result<ConversationRuntime<AnthropicRuntimeClient, CliToolExecutor>, Box<dyn std::error::Error>>
-{
-    build_runtime_with_permission_mode(
-        session,
-        model,
-        system_prompt,
-        enable_tools,
-        allowed_tools,
-        permission_mode_label(),
-    )
-}
-
-fn build_runtime_with_permission_mode(
-    session: Session,
-    model: String,
-    system_prompt: Vec<String>,
-    enable_tools: bool,
-    allowed_tools: Option<AllowedToolSet>,
-    permission_mode: &str,
+    permission_mode: PermissionMode,
 ) -> Result<ConversationRuntime<AnthropicRuntimeClient, CliToolExecutor>, Box<dyn std::error::Error>>
 {
     Ok(ConversationRuntime::new(
@@ -1851,6 +1884,52 @@ fn build_runtime_with_permission_mode(
         permission_policy(permission_mode),
         system_prompt,
     ))
+}
+
+struct CliPermissionPrompter {
+    current_mode: PermissionMode,
+}
+
+impl CliPermissionPrompter {
+    fn new(current_mode: PermissionMode) -> Self {
+        Self { current_mode }
+    }
+}
+
+impl runtime::PermissionPrompter for CliPermissionPrompter {
+    fn decide(
+        &mut self,
+        request: &runtime::PermissionRequest,
+    ) -> runtime::PermissionPromptDecision {
+        println!();
+        println!("Permission approval required");
+        println!("  Tool             {}", request.tool_name);
+        println!("  Current mode     {}", self.current_mode.as_str());
+        println!("  Required mode    {}", request.required_mode.as_str());
+        println!("  Input            {}", request.input);
+        print!("Approve this tool call? [y/N]: ");
+        let _ = io::stdout().flush();
+
+        let mut response = String::new();
+        match io::stdin().read_line(&mut response) {
+            Ok(_) => {
+                let normalized = response.trim().to_ascii_lowercase();
+                if matches!(normalized.as_str(), "y" | "yes") {
+                    runtime::PermissionPromptDecision::Allow
+                } else {
+                    runtime::PermissionPromptDecision::Deny {
+                        reason: format!(
+                            "tool '{}' denied by user approval prompt",
+                            request.tool_name
+                        ),
+                    }
+                }
+            }
+            Err(error) => runtime::PermissionPromptDecision::Deny {
+                reason: format!("permission approval failed: {error}"),
+            },
+        }
+    }
 }
 
 struct AnthropicRuntimeClient {
@@ -2096,15 +2175,16 @@ impl ToolExecutor for CliToolExecutor {
     }
 }
 
-fn permission_policy(mode: &str) -> PermissionPolicy {
-    if normalize_permission_mode(mode) == Some("read-only") {
-        PermissionPolicy::new(PermissionMode::Deny)
-            .with_tool_mode("read_file", PermissionMode::Allow)
-            .with_tool_mode("glob_search", PermissionMode::Allow)
-            .with_tool_mode("grep_search", PermissionMode::Allow)
-    } else {
-        PermissionPolicy::new(PermissionMode::Allow)
-    }
+fn permission_policy(mode: PermissionMode) -> PermissionPolicy {
+    tool_permission_specs()
+        .into_iter()
+        .fold(PermissionPolicy::new(mode), |policy, spec| {
+            policy.with_tool_requirement(spec.name, spec.required_permission)
+        })
+}
+
+fn tool_permission_specs() -> Vec<ToolSpec> {
+    mvp_tool_specs()
 }
 
 fn convert_messages(messages: &[ConversationMessage]) -> Vec<InputMessage> {
@@ -2169,6 +2249,7 @@ fn print_help() {
     println!("Flags:");
     println!("  --model MODEL              Override the active model");
     println!("  --output-format FORMAT     Non-interactive output format: text or json");
+    println!("  --permission-mode MODE     Set read-only, workspace-write, or danger-full-access");
     println!("  --allowedTools TOOLS       Restrict enabled tools (repeatable; comma-separated aliases supported)");
     println!("  --version, -V              Print version and build information locally");
     println!();
@@ -2203,7 +2284,7 @@ mod tests {
         resume_supported_slash_commands, status_context, CliAction, CliOutputFormat, SlashCommand,
         StatusUsage, DEFAULT_MODEL,
     };
-    use runtime::{ContentBlock, ConversationMessage, MessageRole};
+    use runtime::{ContentBlock, ConversationMessage, MessageRole, PermissionMode};
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -2213,6 +2294,7 @@ mod tests {
             CliAction::Repl {
                 model: DEFAULT_MODEL.to_string(),
                 allowed_tools: None,
+                permission_mode: PermissionMode::WorkspaceWrite,
             }
         );
     }
@@ -2231,6 +2313,7 @@ mod tests {
                 model: DEFAULT_MODEL.to_string(),
                 output_format: CliOutputFormat::Text,
                 allowed_tools: None,
+                permission_mode: PermissionMode::WorkspaceWrite,
             }
         );
     }
@@ -2251,6 +2334,7 @@ mod tests {
                 model: "claude-opus".to_string(),
                 output_format: CliOutputFormat::Json,
                 allowed_tools: None,
+                permission_mode: PermissionMode::WorkspaceWrite,
             }
         );
     }
@@ -2264,6 +2348,19 @@ mod tests {
         assert_eq!(
             parse_args(&["-V".to_string()]).expect("args should parse"),
             CliAction::Version
+        );
+    }
+
+    #[test]
+    fn parses_permission_mode_flag() {
+        let args = vec!["--permission-mode=read-only".to_string()];
+        assert_eq!(
+            parse_args(&args).expect("args should parse"),
+            CliAction::Repl {
+                model: DEFAULT_MODEL.to_string(),
+                allowed_tools: None,
+                permission_mode: PermissionMode::ReadOnly,
+            }
         );
     }
 
@@ -2284,6 +2381,7 @@ mod tests {
                         .map(str::to_string)
                         .collect()
                 ),
+                permission_mode: PermissionMode::WorkspaceWrite,
             }
         );
     }
